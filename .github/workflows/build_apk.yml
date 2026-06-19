@@ -1,0 +1,39 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Permite rodar o build manualmente no GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Generate Android Platform files
+        run: |
+          flutter create --platforms android .
+
+      - name: Setup AppAuth Redirect Scheme in build.gradle
+        run: |
+          sed -i 's/defaultConfig {/defaultConfig {\n        manifestPlaceholders = [\n            "appAuthRedirectScheme": "spotify2youtube"\n        ]/' android/app/build.gradle
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
