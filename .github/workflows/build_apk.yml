@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Permite rodar o build manualmente no GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -24,22 +24,25 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Generate Android Platform files
+      - name: Create new Flutter project
         run: |
-          flutter create --platforms android .
+          flutter create --org com.example --project-name spotify2youtube app_temp
+          cp -r lib app_temp/
+          cp pubspec.yaml app_temp/
 
       - name: Setup AppAuth Redirect Scheme in build.gradle
         run: |
+          cd app_temp
           sed -i 's/defaultConfig {/defaultConfig {\n        manifestPlaceholders = [\n            "appAuthRedirectScheme": "spotify2youtube"\n        ]/' android/app/build.gradle
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Install dependencies and Build APK
+        run: |
+          cd app_temp
+          flutter pub get
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release.apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: app_temp/build/app/outputs/flutter-apk/app-release.apk
